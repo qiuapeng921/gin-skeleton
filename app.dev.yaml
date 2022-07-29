@@ -1,0 +1,39 @@
+mode: "test"
+app: "micro-base"
+env: "dev"
+
+restful:
+  host: ""
+  basePath: /
+  addr: :80
+  cors:
+    enable: false
+    AllowAllOrigins: false
+    AllowOrigins:
+      - "*"
+    AllowMethods: [ ]
+    AllowHeaders: [ ]
+    AllowCredentials: false
+    ExposeHeaders: [ ]
+    MaxAge: 0s
+    AllowWebSockets: false
+    AllowFiles: false
+  doc:
+    title: ""
+    description: ""
+    termOfService: ""
+    contact: ""
+
+monitor:
+  enable: true
+  addr: :81
+
+logger:
+  level: "debug"
+  format: "json"
+  targetType: "file"
+  target: "storage/logs/micro-base.log"
+
+# 企业微信机器人
+qyNoticeKey: "17c80e16-5719-4312-9471-1d68fc15c47c"
+

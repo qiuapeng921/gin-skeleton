@@ -1,0 +1,40 @@
+kind: Service
+apiVersion: v1
+metadata:
+  name: micro-scrm-svc
+  namespace: tapestry
+  labels:
+    app: micro-scrm-svc
+spec:
+  ports:
+    - name: tcp-8080
+      protocol: TCP
+      port: 8080
+      targetPort: 8080
+  selector:
+    app: micro-scrm
+  type: NodePort
+  sessionAffinity: None
+  externalTrafficPolicy: Cluster
+  ipFamilyPolicy: SingleStack
+---
+
+kind: Service
+apiVersion: v1
+metadata:
+  name: micro-scrm-job-svc
+  namespace: tapestry
+  labels:
+    app: micro-scrm-job-svc
+spec:
+  ports:
+    - name: tcp-5921
+      protocol: TCP
+      port: 5921
+      targetPort: 5921
+  selector:
+    app: micro-scrm-job
+  type: NodePort
+  sessionAffinity: None
+  externalTrafficPolicy: Cluster
+  ipFamilyPolicy: SingleStack

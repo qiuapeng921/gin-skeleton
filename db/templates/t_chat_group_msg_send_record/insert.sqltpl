@@ -1,0 +1,24 @@
+INSERT INTO `chat_group_msg_send_record`
+(
+  `id`,
+  `enterprise_id`,
+  `msg_task_id`,
+  `msg_task_member_id`,
+  `chat_id`,
+  `status`,
+  `send_time`,
+  `created_at`,
+  `updated_at`,
+  `deleted_at`
+) values (
+  :id,
+  :enterprise_id,
+  :msg_task_id,
+  :msg_task_member_id,
+  :chat_id,
+  :status,
+  :send_time,
+  :created_at,
+  :updated_at,
+  :deleted_at
+)

@@ -1,0 +1,120 @@
+kind: Deployment
+apiVersion: apps/v1
+metadata:
+  name: micro-scrm
+  namespace: tapestry
+  labels:
+    app: micro-scrm
+  annotations:
+    kubesphere.io/description: golang核心服务
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: micro-scrm
+  template:
+    metadata:
+      labels:
+        app: micro-scrm
+    spec:
+      affinity:
+        nodeAffinity:
+          requiredDuringSchedulingIgnoredDuringExecution:
+            nodeSelectorTerms:
+              - matchExpressions:
+                  - key: kubernetes.io/hostname
+                    operator: In
+                    values:
+                      - 10.2.1.16
+                      - 10.2.2.7
+      containers:
+        - name: micro-scrm
+          image: 'harbor.vchangyi.com/tapestry/micro-scrm:TAG_VERSION'
+          ports:
+            - name: tcp-8080
+              containerPort: 8080
+              protocol: TCP
+          env:
+            - name: env
+              value: uat
+            - name: server
+              value: http
+          resources: { }
+          terminationMessagePath: /dev/termination-log
+          terminationMessagePolicy: File
+          imagePullPolicy: IfNotPresent
+      restartPolicy: Always
+      terminationGracePeriodSeconds: 30
+      dnsPolicy: ClusterFirst
+      serviceAccountName: default
+      serviceAccount: default
+      securityContext: {}
+      schedulerName: default-scheduler
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxUnavailable: 25%
+      maxSurge: 25%
+  revisionHistoryLimit: 10
+  progressDeadlineSeconds: 600
+---
+
+kind: Deployment
+apiVersion: apps/v1
+metadata:
+  name: micro-scrm-job
+  namespace: tapestry
+  labels:
+    app: micro-scrm-job
+  annotations:
+    kubesphere.io/description: golang核心服务定时任务
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: micro-scrm-job
+  template:
+    metadata:
+      labels:
+        app: micro-scrm-job
+    spec:
+      affinity:
+        nodeAffinity:
+          requiredDuringSchedulingIgnoredDuringExecution:
+            nodeSelectorTerms:
+              - matchExpressions:
+                  - key: kubernetes.io/hostname
+                    operator: In
+                    values:
+                      - 10.2.1.16
+                      - 10.2.2.7
+      containers:
+        - name: micro-scrm-job
+          image: 'harbor.vchangyi.com/tapestry/micro-scrm:TAG_VERSION'
+          ports:
+            - name: tcp-5921
+              containerPort: 5921
+              protocol: TCP
+          env:
+            - name: env
+              value: uat
+            - name: server
+              value: job
+          resources: { }
+          terminationMessagePath: /dev/termination-log
+          terminationMessagePolicy: File
+          imagePullPolicy: IfNotPresent
+      restartPolicy: Always
+      terminationGracePeriodSeconds: 30
+      dnsPolicy: ClusterFirst
+      serviceAccountName: default
+      serviceAccount: default
+      securityContext: {}
+      schedulerName: default-scheduler
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxUnavailable: 25%
+      maxSurge: 25%
+  revisionHistoryLimit: 10
+  progressDeadlineSeconds: 600
