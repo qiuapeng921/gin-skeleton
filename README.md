@@ -1,4 +1,37 @@
-# micro-scrm 
+# micro-base
+
+```
+1. golang 版本 >= 1.18
+```
+
+### 配置私有仓库和加速器
+```
+Bash (Linux or macOS)
+export GOPROXY=https://proxy.golang.com.cn,direct
+# 还可以设置不走 proxy 的私有仓库或组，多个用逗号相隔（可选）
+export GOPRIVATE=gitlab-ce.k8s.tools.vchangyi.com
+
+
+PowerShell (Windows)
+# 配置 GOPROXY 环境变量
+$env:GOPROXY = "https://proxy.golang.com.cn,direct"
+# 还可以设置不走 proxy 的私有仓库或组，多个用逗号相隔（可选）
+$env:GOPRIVATE = "gitlab-ce.k8s.tools.vchangyi.com"
+
+```
+
+### git配置
+```
+git config --global credential.helper store
+echo https://用户名:密码@gitlab-ce.k8s.tools.vchangyi.com >> ~/.git-credentials
+```
+
+### 初始化项目
+```
+git clone https://gitlab-ce.k8s.tools.vchangyi.com/project/tapestry/backend/micro-base.git
+cd micro-base
+go mod tidy
+```
 
 #### 目录结构
 ```
