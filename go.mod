@@ -1,4 +1,4 @@
-module micro-scrm
+module micro-base
 
 go 1.18
 

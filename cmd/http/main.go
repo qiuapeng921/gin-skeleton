@@ -13,9 +13,9 @@ import (
 
 	"gitlab-ce.k8s.tools.vchangyi.com/common/go-toolbox/ctx"
 	"gitlab-ce.k8s.tools.vchangyi.com/common/go-toolbox/servers"
-	"micro-scrm/cmd"
-	"micro-scrm/cmd/http/api"
-	"micro-scrm/internal/config"
+	"micro-base/cmd"
+	"micro-base/cmd/http/api"
+	"micro-base/internal/config"
 )
 
 // Version ...

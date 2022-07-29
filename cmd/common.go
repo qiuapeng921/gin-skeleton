@@ -6,7 +6,7 @@ import (
 	"gitlab-ce.k8s.tools.vchangyi.com/common/go-toolbox/args"
 	"gitlab-ce.k8s.tools.vchangyi.com/common/go-toolbox/helper"
 	"gitlab-ce.k8s.tools.vchangyi.com/common/go-toolbox/log"
-	"micro-scrm/internal/config"
+	"micro-base/internal/config"
 	"os"
 )
 

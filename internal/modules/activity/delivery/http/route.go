@@ -3,8 +3,8 @@ package http
 import (
 	"gitlab-ce.k8s.tools.vchangyi.com/common/go-toolbox/docs/swagger"
 	"gitlab-ce.k8s.tools.vchangyi.com/common/go-toolbox/docs/swagger/endpoint"
-	"micro-scrm/internal/modules/activity"
-	activityMysql "micro-scrm/internal/modules/activity/respository/mysql"
+	"micro-base/internal/modules/activity"
+	activityMysql "micro-base/internal/modules/activity/respository/mysql"
 )
 
 var activityService = activity.New(activityMysql.New())

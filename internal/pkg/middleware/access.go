@@ -4,7 +4,7 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/satori/go.uuid"
 	"gitlab-ce.k8s.tools.vchangyi.com/common/go-toolbox/ctx"
-	"micro-scrm/internal/pkg/common"
+	"micro-base/internal/pkg/common"
 	"strconv"
 )
 

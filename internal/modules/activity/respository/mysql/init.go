@@ -3,7 +3,7 @@ package mysql
 import (
 	"gitlab-ce.k8s.tools.vchangyi.com/common/go-toolbox/repos"
 	"gitlab-ce.k8s.tools.vchangyi.com/common/go-toolbox/sqlplus"
-	"micro-scrm/internal/modules/activity"
+	"micro-base/internal/modules/activity"
 )
 
 func New() activity.Repository {

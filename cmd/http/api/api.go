@@ -7,8 +7,8 @@ import (
 	"gitlab-ce.k8s.tools.vchangyi.com/common/go-toolbox/docs"
 	"gitlab-ce.k8s.tools.vchangyi.com/common/go-toolbox/docs/swagger"
 	middleware "gitlab-ce.k8s.tools.vchangyi.com/common/go-toolbox/ginplus/mw"
-	"micro-scrm/internal/config"
-	interMiddleware "micro-scrm/internal/pkg/middleware"
+	"micro-base/internal/config"
+	interMiddleware "micro-base/internal/pkg/middleware"
 )
 
 // Api api 描述
