@@ -1,30 +1,26 @@
 package main
 
 import (
+	"context"
+	"flag"
 	"github.com/gin-gonic/gin/binding"
-	"gitlab-ce.k8s.tools.vchangyi.com/common/go-toolbox/ginplus"
-	"gitlab-ce.k8s.tools.vchangyi.com/common/go-toolbox/log"
-	"gitlab-ce.k8s.tools.vchangyi.com/common/go-toolbox/monitor"
-	"net/http"
-	"os"
-	"time"
-
-	_ "github.com/go-sql-driver/mysql"
-
-	"gitlab-ce.k8s.tools.vchangyi.com/common/go-toolbox/ctx"
-	"gitlab-ce.k8s.tools.vchangyi.com/common/go-toolbox/servers"
 	"micro-base/cmd"
 	"micro-base/cmd/http/api"
 	"micro-base/internal/config"
+	"micro-base/internal/pkg/core/ctx"
+	"micro-base/internal/pkg/core/ginplus"
+	"micro-base/internal/pkg/core/log"
+	"net/http"
+	"os"
+	"os/signal"
+	"syscall"
+	"time"
 )
 
-// Version ...
-var Version = "dev"
-
-// Build ...
-var Build = "now"
+var flagConf string
 
 func init() {
+	flag.StringVar(&flagConf, "conf", config.DefaultConfigFile, "config path, eg: -conf app.yaml")
 	// 汉化参数验证器
 	binding.Validator = ginplus.NewValidator()
 }
@@ -32,24 +28,29 @@ func init() {
 func main() {
 	start := time.Now() // 获取当前时间
 
-	// 解析命令行参数
-	cmd.ParseConfigFromCmd(os.Args)
 	// 注册配置
 	cmd.RegisterConfig(false)
 
-	serverGroup := servers.Group(&http.Server{
+	serverGroup := http.Server{
 		Addr:    config.CfgData.Restful.Addr,
 		Handler: api.Api(config.CfgData.Mode),
-	})
-	if config.CfgData.Monitor.Enable {
-		serverGroup = serverGroup.Add(monitor.HTTP(config.CfgData.Restful.BasePath, config.CfgData.Monitor.Addr))
 	}
 
 	elapsed := time.Since(start)
 
-	log.Info(ctx.New()).Msgf("服务启动用时：%+v", elapsed)
+	cc := ctx.New()
 
-	serverGroup.ListenAndServe(func(context ctx.Context) {
-		cmd.ExitHandle()
-	})
+	log.Info(cc).Msgf("服务启动用时：%+v", elapsed)
+
+	quit := make(chan os.Signal)
+	signal.Notify(quit, syscall.SIGHUP, syscall.SIGQUIT, syscall.SIGTERM, syscall.SIGINT)
+	<-quit
+	log.Info(cc).Msgf("Shutdown Server ...")
+
+	cw, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
+	if err := serverGroup.Shutdown(ctx.Wrap(cw)); err != nil {
+		log.Error(cc).Msgf("Server Shutdown:", err)
+	}
+	log.Info(cc).Msgf("Server exiting")
 }

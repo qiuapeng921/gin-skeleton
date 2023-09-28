@@ -1,6 +1,8 @@
 package errs
 
-import "gitlab-ce.k8s.tools.vchangyi.com/common/go-toolbox/errorx"
+import (
+	"micro-base/internal/pkg/core/errorx"
+)
 
 // ErrorStatus 错误状态码
 var ErrorStatus = 401
