@@ -11,8 +11,7 @@ type Config struct {
 	Mode    string     `yaml:"mode"`
 	Env     string     `yaml:"env"`
 	Restful RestfulCfg `yaml:"restful"`
-
-	Logger LoggerCfg
+	Logger  LoggerCfg  `yaml:"logger"`
 }
 
 // Log 返回日志配置对象
@@ -38,7 +37,7 @@ type LoggerCfg struct {
 	Level      string `yaml:"level" usage:"日志级别"`
 	TargetType string `yaml:"targetType" usage:"输出目标类型 console/file"`
 	Target     string `yaml:"target" usage:"日志输出格式 file path"`
-	Format     string `yaml:"format" usage:"日志输出格式 yaml/raw"`
+	Format     string `yaml:"format" usage:"日志输出格式 json/raw"`
 }
 
 // Cors 跨域配置

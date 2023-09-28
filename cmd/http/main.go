@@ -31,7 +31,7 @@ func main() {
 	// 注册配置
 	cmd.RegisterConfig(false)
 
-	serverGroup := http.Server{
+	server := http.Server{
 		Addr:    config.CfgData.Restful.Addr,
 		Handler: api.Api(config.CfgData.Mode),
 	}
@@ -40,7 +40,7 @@ func main() {
 
 	cc := ctx.New()
 
-	log.Info(cc).Msgf("服务启动用时：%+v", elapsed)
+	log.Info(cc).Msgf("服务启动用时：%v", elapsed)
 
 	quit := make(chan os.Signal)
 	signal.Notify(quit, syscall.SIGHUP, syscall.SIGQUIT, syscall.SIGTERM, syscall.SIGINT)
@@ -49,7 +49,7 @@ func main() {
 
 	cw, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
-	if err := serverGroup.Shutdown(ctx.Wrap(cw)); err != nil {
+	if err := server.Shutdown(ctx.Wrap(cw)); err != nil {
 		log.Error(cc).Msgf("Server Shutdown:", err)
 	}
 	log.Info(cc).Msgf("Server exiting")
