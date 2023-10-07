@@ -7,22 +7,17 @@ import (
 
 // Config 配置组合
 type Config struct {
-	App     string     `yaml:"app"`
-	Mode    string     `yaml:"mode"`
-	Env     string     `yaml:"env"`
-	Restful RestfulCfg `yaml:"restful"`
-	Logger  LoggerCfg  `yaml:"logger"`
+	App     string      `yaml:"app"`
+	Mode    string      `yaml:"mode"`
+	Env     string      `yaml:"env"`
+	Restful RestfulCfg  `yaml:"restful"`
+	Logger  LoggerCfg   `yaml:"logger"`
+	DB      MysqlConfig `yaml:"db"`
+	RDB     RedisConfig `yaml:"rdb"`
 }
 
 // Log 返回日志配置对象
-func (c Config) Log(logToStderr bool) log.Config {
-	if logToStderr {
-		return log.Config{
-			App:    c.App,
-			Level:  c.Logger.Level,
-			Format: c.Logger.Format,
-		}
-	}
+func (c Config) Log() log.Config {
 	return log.Config{
 		App:        c.App,
 		Level:      c.Logger.Level,
@@ -43,15 +38,15 @@ type LoggerCfg struct {
 // Cors 跨域配置
 type Cors struct {
 	Enable           bool          `yaml:"enable"`
-	AllowAllOrigins  bool          `yaml:"AllowAllOrigins"`
-	AllowOrigins     []string      `yaml:"AllowOrigins"`
-	AllowMethods     []string      `yaml:"AllowMethods"`
-	AllowHeaders     []string      `yaml:"AllowHeaders"`
-	AllowCredentials bool          `yaml:"AllowCredentials"`
-	ExposeHeaders    []string      `yaml:"ExposeHeaders"`
-	MaxAge           time.Duration `yaml:"MaxAge"`
-	AllowWebSockets  bool          `yaml:"AllowWebSockets"`
-	AllowFiles       bool          `yaml:"AllowFiles"`
+	AllowAllOrigins  bool          `yaml:"allowAllOrigins"`
+	AllowOrigins     []string      `yaml:"allowOrigins"`
+	AllowMethods     []string      `yaml:"allowMethods"`
+	AllowHeaders     []string      `yaml:"allowHeaders"`
+	AllowCredentials bool          `yaml:"allowCredentials"`
+	ExposeHeaders    []string      `yaml:"exposeHeaders"`
+	MaxAge           time.Duration `yaml:"maxAge"`
+	AllowWebSockets  bool          `yaml:"allowWebSockets"`
+	AllowFiles       bool          `yaml:"allowFiles"`
 }
 
 // RestfulCfg api 接口配置
@@ -60,4 +55,31 @@ type RestfulCfg struct {
 	BasePath string `yaml:"basePath"`
 	Addr     string `yaml:"addr"`
 	Cors     Cors   `yaml:"cors"`
+}
+
+// MysqlConfig 主配置
+type MysqlConfig struct {
+	Driver  string            `yaml:"driver"`
+	DnsList map[string]string `yaml:"dnsList"`
+	Log     bool              `yaml:"log"`
+	Pool    MysqlPoolCfg      `yaml:"pool"`
+	Cluster string            `yaml:"cluster"`
+}
+
+// MysqlPoolCfg 连接池配置
+type MysqlPoolCfg struct {
+	MaxIdle     int           `yaml:"maxIdle"`
+	MaxOpen     int           `yaml:"maxOpen"`
+	MaxLifeTime time.Duration `yaml:"maxLifeTime" usage:"单位：秒"`
+}
+
+type RedisConfig struct {
+	Addr        string        `yaml:"addr"`
+	User        string        `yaml:"user"`
+	Pwd         string        `yaml:"pwd"`
+	DB          int           `yaml:"db"`
+	DialTimeout time.Duration `yaml:"dialTimeout"`
+	CmdTimeout  time.Duration `yaml:"cmdTimeout"`
+	PoolSize    int           `yaml:"poolSize"`
+	MinIdle     int           `yaml:"minIdle"`
 }

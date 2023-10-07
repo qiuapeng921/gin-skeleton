@@ -5,35 +5,45 @@ env: "dev"
 restful:
   host: ""
   basePath: /
-  addr: :80
+  addr: 127.0.0.1:80
   cors:
     enable: false
-    AllowAllOrigins: false
-    AllowOrigins:
+    allowAllOrigins: false
+    allowOrigins:
       - "*"
-    AllowMethods: [ ]
-    AllowHeaders: [ ]
-    AllowCredentials: false
-    ExposeHeaders: [ ]
-    MaxAge: 0s
-    AllowWebSockets: false
-    AllowFiles: false
-  doc:
-    title: ""
-    description: ""
-    termOfService: ""
-    contact: ""
-
-monitor:
-  enable: true
-  addr: :81
+    allowMethods: [ ]
+    allowHeaders: [ ]
+    allowCredentials: false
+    exposeHeaders: [ ]
+    maxAge: 0s
+    allowWebSockets: false
+    allowFiles: false
 
 logger:
   level: "debug"
   format: "json"
-  targetType: "file"
+  targetType: "console"
   target: "storage/logs/micro-base.log"
 
-# 企业微信机器人
 qyNoticeKey: "17c80e16-5719-4312-9471-1d68fc15c47c"
 
+db:
+  driver: mysql
+  dnsList:
+    spring: "root:123456@tcp(127.0.0.1:3306)/spring?multiStatements=true&parseTime=true"
+    springSalve: "root:123456@tcp(127.0.0.1:3306)/spring-salve?multiStatements=true&parseTime=true"
+  log: true
+  pool:
+    maxIdle: 100
+    maxOpen: 200
+    maxLifeTime: 60s
+
+rdb:
+  addr: "127.0.0.1:6379"
+  user: ""
+  pwd: "123456"
+  db: 6
+  dialTimeout: 0s
+  cmdTimeout: 0s
+  poolSize: 0
+  minIdle: 0

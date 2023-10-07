@@ -1,8 +1,9 @@
 package main
 
 import (
-	"context"
 	"flag"
+	"fmt"
+	"github.com/gin-gonic/gin"
 	"github.com/gin-gonic/gin/binding"
 	"micro-base/cmd"
 	"micro-base/cmd/http/api"
@@ -10,10 +11,9 @@ import (
 	"micro-base/internal/pkg/core/ctx"
 	"micro-base/internal/pkg/core/ginplus"
 	"micro-base/internal/pkg/core/log"
+	"micro-base/internal/pkg/core/servers"
 	"net/http"
-	"os"
-	"os/signal"
-	"syscall"
+	"runtime"
 	"time"
 )
 
@@ -26,31 +26,28 @@ func init() {
 }
 
 func main() {
+	c := ctx.New()
+
 	start := time.Now() // 获取当前时间
 
 	// 注册配置
-	cmd.RegisterConfig(false)
+	cmd.RegisterConfig(c)
 
-	server := http.Server{
+	serverGroup := servers.Group(&http.Server{
 		Addr:    config.CfgData.Restful.Addr,
 		Handler: api.Api(config.CfgData.Mode),
-	}
+	})
 
 	elapsed := time.Since(start)
 
-	cc := ctx.New()
+	log.Info(c).Msgf("服务启动用时：%v", elapsed)
+	fmt.Println(fmt.Sprintf("Server      Name:     %s", config.CfgData.App))
+	fmt.Println(fmt.Sprintf("System      Name:     %s", runtime.GOOS))
+	fmt.Println(fmt.Sprintf("Go          Version:  %s", runtime.Version()))
+	fmt.Println(fmt.Sprintf("Gin         Version:  %s", gin.Version))
+	fmt.Println(fmt.Sprintf("Listen      Address:  %s", "http://"+config.CfgData.Restful.Addr))
 
-	log.Info(cc).Msgf("服务启动用时：%v", elapsed)
+	serverGroup.ListenAndServe(c, func(context ctx.Context) {
 
-	quit := make(chan os.Signal)
-	signal.Notify(quit, syscall.SIGHUP, syscall.SIGQUIT, syscall.SIGTERM, syscall.SIGINT)
-	<-quit
-	log.Info(cc).Msgf("Shutdown Server")
-
-	cw, cancel := context.WithTimeout(context.Background(), 10*time.Second)
-	defer cancel()
-	if err := server.Shutdown(ctx.Wrap(cw)); err != nil {
-		log.Error(cc).Msgf("Server Shutdown:", err)
-	}
-	log.Info(cc).Msgf("Server exiting")
+	})
 }

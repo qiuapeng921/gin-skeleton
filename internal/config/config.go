@@ -15,9 +15,11 @@ var CfgData *Config
 // Init 业务数据初始化，在解析命令行参数过后执行
 func Init() {
 	yamlFile, err := ioutil.ReadFile(DefaultConfigFile)
+	if err != nil {
+		fmt.Errorf("读取配置文件失败: %s", err.Error())
+	}
 	err = yaml.Unmarshal(yamlFile, &CfgData)
 	if err != nil {
-		fmt.Println("解析 YAML 失败：", err)
-		return
+		fmt.Errorf("解析配置文件失败: %s", err.Error())
 	}
 }
