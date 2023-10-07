@@ -11,7 +11,7 @@ import (
 
 var client *redis.Client
 
-func InitConnection(c ctx.Context, cfg config.RedisConfig) error {
+func InitConnection(c ctx.Context, cfg config.RdbConfig) error {
 	if cfg.PoolSize < runtime.NumCPU() {
 		cfg.PoolSize = runtime.NumCPU() * 10
 	}

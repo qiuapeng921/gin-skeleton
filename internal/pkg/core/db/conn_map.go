@@ -10,7 +10,7 @@ import (
 
 var databasesConn sync.Map
 
-func InitConnection(c ctx.Context, conf config.MysqlConfig) error {
+func InitConnection(c ctx.Context, conf config.DbConfig) error {
 	for alias, dns := range conf.DnsList {
 		microDatabase := &Config{
 			Dsn:                dns,

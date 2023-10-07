@@ -7,13 +7,13 @@ import (
 
 // Config 配置组合
 type Config struct {
-	App     string      `yaml:"app"`
-	Mode    string      `yaml:"mode"`
-	Env     string      `yaml:"env"`
-	Restful RestfulCfg  `yaml:"restful"`
-	Logger  LoggerCfg   `yaml:"logger"`
-	DB      MysqlConfig `yaml:"db"`
-	RDB     RedisConfig `yaml:"rdb"`
+	App     string     `yaml:"app"`
+	Mode    string     `yaml:"mode"`
+	Env     string     `yaml:"env"`
+	Restful RestfulCfg `yaml:"restful"`
+	Logger  LoggerCfg  `yaml:"logger"`
+	DB      DbConfig   `yaml:"db"`
+	RDB     RdbConfig  `yaml:"rdb"`
 }
 
 // Log 返回日志配置对象
@@ -57,23 +57,20 @@ type RestfulCfg struct {
 	Cors     Cors   `yaml:"cors"`
 }
 
-// MysqlConfig 主配置
-type MysqlConfig struct {
+type DbConfig struct {
 	Driver  string            `yaml:"driver"`
 	DnsList map[string]string `yaml:"dnsList"`
 	Log     bool              `yaml:"log"`
-	Pool    MysqlPoolCfg      `yaml:"pool"`
+	Pool    DbPoolCfg         `yaml:"pool"`
 	Cluster string            `yaml:"cluster"`
 }
 
-// MysqlPoolCfg 连接池配置
-type MysqlPoolCfg struct {
+type DbPoolCfg struct {
 	MaxIdle     int           `yaml:"maxIdle"`
 	MaxOpen     int           `yaml:"maxOpen"`
 	MaxLifeTime time.Duration `yaml:"maxLifeTime" usage:"单位：秒"`
 }
-
-type RedisConfig struct {
+type RdbConfig struct {
 	Addr        string        `yaml:"addr"`
 	User        string        `yaml:"user"`
 	Pwd         string        `yaml:"pwd"`
