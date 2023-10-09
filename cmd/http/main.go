@@ -31,7 +31,7 @@ func main() {
 	start := time.Now() // 获取当前时间
 
 	// 注册配置
-	cmd.RegisterConfig(c)
+	cmd.RegisterConfig(c, flagConf)
 
 	serverGroup := servers.Group(&http.Server{
 		Addr:    config.CfgData.Restful.Addr,

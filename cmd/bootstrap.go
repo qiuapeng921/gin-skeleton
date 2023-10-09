@@ -13,8 +13,8 @@ import (
 )
 
 // RegisterConfig 加载配置
-func RegisterConfig(c ctx.Context) {
-	config.Init()
+func RegisterConfig(c ctx.Context, configFile string) {
+	config.Init(configFile)
 	helper.Must(log.Init(config.CfgData.Log()))
 
 	utils.Must(db.InitConnection(c, config.CfgData.DB))
