@@ -1,6 +1,7 @@
 package api
 
 import (
+	v1 "micro-base/internal/app/router/v1"
 	"micro-base/internal/middleware"
 	"net/http"
 
@@ -26,6 +27,9 @@ func Api(mode string) http.Handler {
 	router.GET("/heart-beat", func(context *gin.Context) {
 		context.String(http.StatusOK, "true")
 	})
+
+	microCrm := router.Group(config.CfgData.Restful.BasePath)
+	v1.InitRouter(microCrm)
 
 	return router
 }
