@@ -17,7 +17,7 @@ type ServerGroup interface {
 	Start(c ctx.Context)
 	ListenAndServe(c ctx.Context, cleans ...func(ctx.Context))
 	Shutdown(ctx ctx.Context) error
-	Add(servers ...Server) ServerGroup
+	Add(servers ...NamedServer) ServerGroup
 }
 
 // Server 服务接口
@@ -37,16 +37,13 @@ type NamedServer interface {
 }
 
 // serverGroup 服务组
-type serverGroup []Server
+type serverGroup []NamedServer
 
 // Start 启动服务
 func (sg serverGroup) Start(c ctx.Context) {
 	for _, server := range sg {
-		go func(server Server) {
-			name := ""
-			if ns, ok := server.(NamedServer); ok {
-				name = ns.Name()
-			}
+		go func(server NamedServer) {
+			name := server.Name()
 			log.Info(c).Msgf("server running at %v", name)
 
 			if err := server.ListenAndServe(); err != nil && !errors.Is(err, http.ErrServerClosed) {
@@ -81,12 +78,8 @@ func (sg serverGroup) ListenAndServe(c ctx.Context, cleans ...func(ctx.Context))
 // Shutdown 停止服务
 func (sg serverGroup) Shutdown(c ctx.Context) error {
 	for _, server := range sg {
-		name := ""
-		if ns, ok := server.(NamedServer); ok {
-			name = ns.Name()
-		}
+		name := server.Name()
 		log.Info(c).Msgf("%v Server shutdown", name)
-
 		if err := server.Shutdown(c); err != nil {
 			log.Err(c, err).Msg("Server shutdown error: %v")
 		}
@@ -96,11 +89,11 @@ func (sg serverGroup) Shutdown(c ctx.Context) error {
 }
 
 // Add 添加服务。需要接受返回值，可能返回一个新服务组对象
-func (sg serverGroup) Add(servers ...Server) ServerGroup {
+func (sg serverGroup) Add(servers ...NamedServer) ServerGroup {
 	return append(sg, servers...)
 }
 
 // Group 打包一个服务组
-func Group(servers ...Server) ServerGroup {
+func Group(servers ...NamedServer) ServerGroup {
 	return serverGroup(servers)
 }

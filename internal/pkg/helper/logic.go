@@ -6,22 +6,12 @@ import (
 	"reflect"
 )
 
-// ValueFunc 值函数
-type ValueFunc = func() interface{}
-
 // ValueIf 实现 3 元运算符逻辑： logic ? v1 : v2
-func ValueIf(logic bool, v1 interface{}, v2 interface{}) interface{} {
+func ValueIf[T any](logic bool, v1 T, v2 T) T {
 	if logic {
-		if v1f, ok := v1.(ValueFunc); ok {
-			return v1f()
-		}
 		return v1
 	}
-	if v2f, ok := v2.(ValueFunc); ok {
-		return v2f()
-	}
 	return v2
-
 }
 
 // IsNil 是否为 nil

@@ -2,8 +2,6 @@ package main
 
 import (
 	"flag"
-	"fmt"
-	"github.com/gin-gonic/gin"
 	"github.com/gin-gonic/gin/binding"
 	"micro-base/cmd"
 	"micro-base/cmd/http/api"
@@ -13,8 +11,6 @@ import (
 	"micro-base/internal/pkg/core/log"
 	"micro-base/internal/pkg/core/servers"
 	"net/http"
-	"runtime"
-	"time"
 )
 
 var flagConf string
@@ -28,26 +24,20 @@ func init() {
 func main() {
 	c := ctx.New()
 
-	start := time.Now() // 获取当前时间
-
 	// 注册配置
 	cmd.RegisterConfig(c, flagConf)
 
-	serverGroup := servers.Group(&http.Server{
-		Addr:    config.CfgData.Restful.Addr,
-		Handler: api.Api(config.CfgData.Mode),
-	})
+	serverWrapper := &servers.HTTPServerWrapper{
+		Server: &http.Server{
+			Addr:    config.CfgData.Restful.Addr,
+			Handler: api.Api(config.CfgData.Mode),
+		},
+		Named: config.CfgData.Restful.Addr,
+	}
 
-	elapsed := time.Since(start)
-
-	log.Info(c).Msgf("服务启动用时：%v", elapsed)
-	fmt.Println(fmt.Sprintf("Server      Name:     %s", config.CfgData.App))
-	fmt.Println(fmt.Sprintf("System      Name:     %s", runtime.GOOS))
-	fmt.Println(fmt.Sprintf("Go          Version:  %s", runtime.Version()))
-	fmt.Println(fmt.Sprintf("Gin         Version:  %s", gin.Version))
-	fmt.Println(fmt.Sprintf("Listen      Address:  %s", "http://"+config.CfgData.Restful.Addr))
+	serverGroup := servers.Group(serverWrapper)
 
 	serverGroup.ListenAndServe(c, func(context ctx.Context) {
-
+		log.Info(c).Msg("服务已经停止")
 	})
 }
