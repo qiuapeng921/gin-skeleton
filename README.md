@@ -23,7 +23,7 @@ $env:GOPRIVATE = "gitlab-ce.k8s.tools.vchangyi.com"
 ### git配置
 ```
 git config --global credential.helper store
-echo https://用户名:密码@gitlab-ce.k8s.tools.vchangyi.com >> ~/.git-credentials
+echo http://用户名:密码@gitlab-ce.k8s.tools.vchangyi.com >> ~/.git-credentials
 ```
 
 ### 初始化项目
