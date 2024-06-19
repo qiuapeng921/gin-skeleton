@@ -4,7 +4,7 @@ import (
 	"flag"
 	"github.com/urfave/cli/v2"
 	"micro-base/cmd"
-	"micro-base/cmd/job/commands"
+	"micro-base/cmd/cli/commands"
 	"micro-base/internal/config"
 	"micro-base/internal/pkg/core/ctx"
 	"os"

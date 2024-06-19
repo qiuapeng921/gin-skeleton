@@ -34,7 +34,7 @@ func GetConnection(name string) *gorm.DB {
 	// 判断map中是否存在数据库链接对象key
 	conn, ok := databasesConn.Load(name)
 	if !ok {
-		return nil
+		panic("数据库连接不存在")
 	}
 
 	return conn.(*gorm.DB)

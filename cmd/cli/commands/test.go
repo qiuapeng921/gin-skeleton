@@ -2,8 +2,8 @@ package commands
 
 import (
 	"github.com/urfave/cli/v2"
-	"micro-base/internal/app"
 	"micro-base/internal/pkg/core/ctx"
+	"micro-base/internal/pkg/core/db"
 	"micro-base/internal/pkg/core/log"
 )
 
@@ -16,7 +16,7 @@ func Test(c *cli.Context) (err error) {
 	}
 
 	var databases []string
-	err = app.DB().Debug().Raw("SHOW DATABASES").Scan(&databases).Error
+	err = db.GetConnection(vName).Debug().Raw("SHOW DATABASES").Scan(&databases).Error
 	if err != nil || len(databases) == 0 {
 		return err
 	}
