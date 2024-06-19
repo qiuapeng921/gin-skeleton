@@ -8,15 +8,14 @@ import (
 	"micro-base/internal/pkg/core/db"
 	"micro-base/internal/pkg/core/log"
 	"micro-base/internal/pkg/core/rdb"
-	"micro-base/internal/pkg/core/utils"
 	"micro-base/internal/pkg/helper"
 )
 
 // RegisterConfig 加载配置
 func RegisterConfig(c ctx.Context, configFile string) {
-	config.Init(configFile)
+	helper.Must(config.Init(configFile))
 	helper.Must(log.Init(config.CfgData.Log()))
 
-	utils.Must(db.InitConnection(c, config.CfgData.DB))
-	utils.Must(rdb.InitConnection(c, config.CfgData.RDB))
+	helper.Must(db.InitConnection(c, config.CfgData.DB))
+	helper.Must(rdb.InitConnection(c, config.CfgData.RDB))
 }

@@ -1,25 +1,31 @@
 package config
 
 import (
-	"fmt"
 	"gopkg.in/yaml.v3"
 	"os"
 )
 
-// DefaultConfigFile ...
 const DefaultConfigFile = "app.yaml"
 
-// CfgData ...
 var CfgData *Config
 
-// Init 业务数据初始化，在解析命令行参数过后执行
-func Init(configFile string) {
+func Init(configFile string) error {
 	yamlFile, err := os.ReadFile(configFile)
 	if err != nil {
-		fmt.Errorf("读取配置文件失败: %s", err.Error())
+		return err
 	}
+
 	err = yaml.Unmarshal(yamlFile, &CfgData)
-	if err != nil {
-		fmt.Errorf("解析配置文件失败: %s", err.Error())
-	}
+	return err
+}
+
+// Config 配置组合
+type Config struct {
+	App     string     `yaml:"app"`
+	Mode    string     `yaml:"mode"`
+	Env     string     `yaml:"env"`
+	Restful RestfulCfg `yaml:"restful"`
+	Logger  LoggerCfg  `yaml:"logger"`
+	DB      DbConfig   `yaml:"db"`
+	RDB     RdbConfig  `yaml:"rdb"`
 }
