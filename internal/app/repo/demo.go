@@ -14,7 +14,7 @@ type Member struct {
 
 func NewMember() *Member {
 	return &Member{
-		dao:   Dao{DB: gormx.GetInstance()},
+		dao:   Dao{DB: app.DB()},
 		model: new(models.MemberModel),
 	}
 }
