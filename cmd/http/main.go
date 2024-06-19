@@ -1,55 +1,71 @@
 package main
 
 import (
+	"flag"
+	"github.com/gin-gonic/gin"
 	"github.com/gin-gonic/gin/binding"
-	"gitlab-ce.k8s.tools.vchangyi.com/common/go-toolbox/ginplus"
-	"gitlab-ce.k8s.tools.vchangyi.com/common/go-toolbox/log"
-	"gitlab-ce.k8s.tools.vchangyi.com/common/go-toolbox/monitor"
-	"net/http"
-	"os"
-	"time"
-
-	_ "github.com/go-sql-driver/mysql"
-
-	"gitlab-ce.k8s.tools.vchangyi.com/common/go-toolbox/ctx"
-	"gitlab-ce.k8s.tools.vchangyi.com/common/go-toolbox/servers"
 	"micro-base/cmd"
-	"micro-base/cmd/http/api"
+	v1 "micro-base/internal/app/router/v1"
 	"micro-base/internal/config"
+	"micro-base/internal/middleware"
+	"micro-base/internal/pkg/core/ctx"
+	"micro-base/internal/pkg/core/ginplus"
+	"micro-base/internal/pkg/core/log"
+	"micro-base/internal/pkg/core/servers"
+	"net/http"
 )
 
-// Version ...
-var Version = "dev"
-
-// Build ...
-var Build = "now"
+var flagConf string
 
 func init() {
+	flag.StringVar(&flagConf, "conf", config.DefaultConfigFile, "config path, eg: -conf app.yaml")
 	// 汉化参数验证器
 	binding.Validator = ginplus.NewValidator()
 }
 
 func main() {
-	start := time.Now() // 获取当前时间
+	c := ctx.New()
 
-	// 解析命令行参数
-	cmd.ParseConfigFromCmd(os.Args)
 	// 注册配置
-	cmd.RegisterConfig(false)
+	cmd.RegisterConfig(c, flagConf)
 
-	serverGroup := servers.Group(&http.Server{
-		Addr:    config.CfgData.Restful.Addr,
-		Handler: api.Api(config.CfgData.Mode),
-	})
-	if config.CfgData.Monitor.Enable {
-		serverGroup = serverGroup.Add(monitor.HTTP(config.CfgData.Restful.BasePath, config.CfgData.Monitor.Addr))
+	serverWrapper := &servers.HTTPServerWrapper{
+		Server: &http.Server{
+			Addr:    config.CfgData.Restful.Addr,
+			Handler: api(config.CfgData.Mode),
+		},
+		Named: config.CfgData.Restful.Addr,
 	}
 
-	elapsed := time.Since(start)
+	serverGroup := servers.Group(serverWrapper)
 
-	log.Info(ctx.New()).Msgf("服务启动用时：%+v", elapsed)
-
-	serverGroup.ListenAndServe(func(context ctx.Context) {
-		cmd.ExitHandle()
+	serverGroup.ListenAndServe(c, func(context ctx.Context) {
+		log.Info(c).Msg("服务已经停止")
 	})
+}
+
+func api(mode string) http.Handler {
+	gin.SetMode(mode)
+	router := gin.New()
+	router.Use(middleware.Recovery())
+	router.Use(middleware.Access())
+	router.Use(middleware.Logger())
+
+	if config.CfgData.Restful.Cors.Enable {
+		router.Use(middleware.Cors(config.CfgData.Restful.Cors))
+	}
+
+	router.GET("/", func(context *gin.Context) {
+		context.String(http.StatusOK, config.CfgData.App+"-"+config.CfgData.Env)
+	})
+
+	// 心跳检测地址
+	router.GET("/heart-beat", func(context *gin.Context) {
+		context.String(http.StatusOK, "true")
+	})
+
+	microCrm := router.Group(config.CfgData.Restful.BasePath)
+	v1.InitRouter(microCrm)
+
+	return router
 }
