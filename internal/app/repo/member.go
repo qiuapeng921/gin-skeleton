@@ -19,9 +19,9 @@ func NewMember() *Member {
 	}
 }
 
-// WithTx 切换db连接,用于事物
-func (d *Member) WithTx(tx *gorm.DB) *Member {
-	d.dao.DB = tx
+// SetDb 切换db连接,用于事物
+func (d *Member) SetDb(db *gorm.DB) *Member {
+	d.dao.DB = db
 	return d
 }
 
