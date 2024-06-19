@@ -3,6 +3,7 @@ package middleware
 import (
 	"bytes"
 	"github.com/gin-gonic/gin"
+	"io"
 	"io/ioutil"
 	"micro-base/internal/pkg/core/ctx"
 	"micro-base/internal/pkg/core/log"
@@ -35,7 +36,7 @@ func Logger() gin.HandlerFunc {
 		if method == http.MethodPost || method == http.MethodPut {
 			mediaType, _, _ := mime.ParseMediaType(c.GetHeader("Content-Type"))
 			if mediaType == "application/json" {
-				body, err := ioutil.ReadAll(c.Request.Body)
+				body, err := io.ReadAll(c.Request.Body)
 				c.Request.Body.Close()
 				if err == nil {
 					buf := bytes.NewBuffer(body)

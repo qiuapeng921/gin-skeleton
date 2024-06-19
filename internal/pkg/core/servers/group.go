@@ -44,7 +44,7 @@ func (sg serverGroup) Start(c ctx.Context) {
 	for _, server := range sg {
 		go func(server NamedServer) {
 			name := server.Name()
-			log.Info(c).Msgf("server running at %v", name)
+			log.Debug(c).Msgf("server running at %v", name)
 
 			if err := server.ListenAndServe(); err != nil && !errors.Is(err, http.ErrServerClosed) {
 				log.Err(c, err).Msgf("server running error: %v", err)

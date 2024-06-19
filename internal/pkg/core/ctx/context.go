@@ -2,7 +2,7 @@ package ctx
 
 import (
 	"context"
-	uuid "github.com/satori/go.uuid"
+	"github.com/google/uuid"
 	"golang.org/x/text/language"
 )
 
@@ -107,6 +107,6 @@ func xReqIDCtx(c context.Context) (context.Context, string) {
 	if id, ok := val.(string); ok && id != "" {
 		return c, id
 	}
-	id := uuid.NewV4().String()
+	id := uuid.New().String()
 	return context.WithValue(c, RequestIDKey, id), id
 }

@@ -20,8 +20,3 @@ func RegisterConfig(c ctx.Context, configFile string) {
 	utils.Must(db.InitConnection(c, config.CfgData.DB))
 	utils.Must(rdb.InitConnection(c, config.CfgData.RDB))
 }
-
-// ExitHandle 处理系统退出信号
-func ExitHandle() {
-
-}

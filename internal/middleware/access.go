@@ -2,7 +2,7 @@ package middleware
 
 import (
 	"github.com/gin-gonic/gin"
-	"github.com/satori/go.uuid"
+	"github.com/google/uuid"
 	"micro-base/internal/pkg/common"
 	"micro-base/internal/pkg/core/ctx"
 	"strconv"
@@ -16,7 +16,7 @@ func Access() gin.HandlerFunc {
 		context.Set(common.ContextKeyEnum.EnterpriseHash, enterpriseHash)
 		requestID := context.GetHeader(common.HeaderKeyEnum.XRequestID)
 		if requestID == "" {
-			requestID = uuid.NewV4().String()
+			requestID = uuid.New().String()
 		}
 		context.Set(ctx.RequestIDKey, requestID)
 

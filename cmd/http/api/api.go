@@ -15,8 +15,9 @@ func Api(mode string) http.Handler {
 	router.Use(middleware.Recovery())
 	router.Use(middleware.Access())
 	router.Use(middleware.Logger())
+
 	if config.CfgData.Restful.Cors.Enable {
-		router.Use(middleware.Cors())
+		router.Use(middleware.Cors(config.CfgData.Restful.Cors))
 	}
 
 	router.GET("/", func(context *gin.Context) {
