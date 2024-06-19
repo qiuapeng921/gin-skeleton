@@ -7,10 +7,9 @@ func GetCommands() []*cli.Command {
 
 	commandsArr = append(commandsArr, &cli.Command{
 		Name:        "test",
-		Aliases:     []string{"t"},
-		Usage:       "测试",
+		Usage:       "job test",
 		UsageText:   "job test <arg>",
-		Description: "测试",
+		Description: "test",
 		Action:      Test,
 	})
 
