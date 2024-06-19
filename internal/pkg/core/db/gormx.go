@@ -25,9 +25,7 @@ type Config struct {
 }
 
 func connect(conf *Config) (*gorm.DB, error) {
-	var directory gorm.Dialector
-
-	directory = mysql.Open(conf.Dsn)
+	directory := mysql.Open(conf.Dsn)
 
 	conn, err := gorm.Open(directory, &gorm.Config{
 		SkipDefaultTransaction: true,
@@ -38,6 +36,10 @@ func connect(conf *Config) (*gorm.DB, error) {
 	}
 
 	sqlDB, err := conn.DB()
+	if err != nil {
+		return nil, err
+	}
+
 	sqlDB.SetMaxOpenConns(conf.MaxOpenConnections)
 	sqlDB.SetConnMaxLifetime(time.Duration(conf.MaxLifeTime))
 	sqlDB.SetMaxIdleConns(conf.MaxIdleConnections)
