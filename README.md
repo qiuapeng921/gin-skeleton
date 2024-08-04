@@ -16,7 +16,7 @@ $env:GOPROXY = "https://goproxy.cn,direct"
 
 ### 初始化项目
 ```
-git clone https://github.com/qiuapeng921/micro-base.git
+git clone https://github.com/qiuapeng921/gin-skeleton.git
 cd micro-base
 go mod tidy
 ```
