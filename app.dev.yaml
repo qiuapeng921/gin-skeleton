@@ -30,8 +30,8 @@ qyNoticeKey: "17c80e16-5719-4312-9471-1d68fc15c47c"
 db:
   driver: mysql
   dnsList:
+    default: "root:123456@tcp(127.0.0.1:3306)/spring?multiStatements=true&parseTime=true"
     spring: "root:123456@tcp(127.0.0.1:3306)/spring?multiStatements=true&parseTime=true"
-    springSalve: "root:123456@tcp(127.0.0.1:3306)/spring-salve?multiStatements=true&parseTime=true"
   log: true
   pool:
     maxIdle: 100
@@ -41,7 +41,7 @@ db:
 rdb:
   addr: "127.0.0.1:6379"
   user: ""
-  pwd: "123456"
+  pwd: ""
   db: 6
   dialTimeout: 0s
   cmdTimeout: 0s
