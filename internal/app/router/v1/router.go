@@ -11,5 +11,6 @@ func InitRouter(router *gin.RouterGroup) {
 	{
 		userHandle := user.NewUserHandle()
 		userGroup.GET("list", userHandle.List)
+		userGroup.GET("create", userHandle.List)
 	}
 }
