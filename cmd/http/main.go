@@ -22,13 +22,10 @@ func init() {
 	// 汉化参数验证器
 	binding.Validator = ginplus.NewValidator()
 }
-
 func main() {
 	c := ctx.New()
-
 	// 注册配置
 	cmd.RegisterConfig(c, flagConf)
-
 	serverWrapper := &servers.HTTPServerWrapper{
 		Server: &http.Server{
 			Addr:    config.CfgData.Restful.Addr,
@@ -36,36 +33,28 @@ func main() {
 		},
 		Named: config.CfgData.Restful.Addr,
 	}
-
 	serverGroup := servers.Group(serverWrapper)
-
 	serverGroup.ListenAndServe(c, func(context ctx.Context) {
 		log.Info(c).Msg("服务已经停止")
 	})
 }
-
 func api(mode string) http.Handler {
 	gin.SetMode(mode)
 	router := gin.New()
 	router.Use(middleware.Recovery())
 	router.Use(middleware.Access())
 	router.Use(middleware.Logger())
-
 	if config.CfgData.Restful.Cors.Enable {
 		router.Use(middleware.Cors(config.CfgData.Restful.Cors))
 	}
-
 	router.GET("/", func(context *gin.Context) {
 		context.String(http.StatusOK, config.CfgData.App+"-"+config.CfgData.Env)
 	})
-
 	// 心跳检测地址
 	router.GET("/heart-beat", func(context *gin.Context) {
 		context.String(http.StatusOK, "true")
 	})
-
 	microCrm := router.Group(config.CfgData.Restful.BasePath)
 	v1.InitRouter(microCrm)
-
 	return router
 }
