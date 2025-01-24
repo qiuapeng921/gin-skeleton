@@ -2,19 +2,25 @@ package main
 
 import (
 	"fmt"
+	"github.com/emersion/go-message/mail"
+	"golang.org/x/net/html"
+	"io"
 	"log"
+	"regexp"
+	"strings"
 	"time"
 
 	"github.com/emersion/go-imap"
 	"github.com/emersion/go-imap/client"
 )
 
-// var addr = "imap.qiye.aliyun.com:993"
-// var username = "us-cs001@khdtek.com"
-// var password = "khd=20221208"
-var addr = "mail.vecelo.com:993"
-var username = "support@vecelo.com"
-var password = "*uvcG]7?=Y}a"
+var addr = "imap.qiye.aliyun.com:993"
+var username = "us-cs001@khdtek.com"
+var password = "khd=20221208"
+
+//var addr = "mail.vecelo.com:993"
+//var username = "support@vecelo.com"
+//var password = "*uvcG]7?=Y}a"
 
 func login() *client.Client {
 	c, err := client.DialTLS(addr, nil) // 替换为你的 IMAP 服务器
@@ -29,8 +35,6 @@ func login() *client.Client {
 }
 
 func main() {
-	fmt.Print("Enter Password: ")
-	return
 	// 连接到 IMAP 服务器
 	log.Println("连接到 IMAP 服务器...")
 
@@ -46,8 +50,9 @@ func main() {
 	// 第一步：获取所有邮件并存储
 	getAllEmails(c, mbox.Messages)
 
+	log.Println("开始监听新邮件...")
 	// 第二步：实时监听新邮件
-	//listenForNewEmails(c, mbox.Messages)
+	listenForNewEmails(c, mbox.Messages)
 
 	// Create a channel to receive mailbox updates
 	updates := make(chan client.Update)
@@ -104,11 +109,8 @@ func getAllEmails(c *client.Client, total uint32) {
 
 	// 遍历并存储邮件
 	log.Println("开始获取所有邮件...")
-	for msg := range messages {
-		form := msg.Envelope.From[0]
-		address := form.MailboxName + "@" + form.HostName
-		log.Printf("邮件编号: %d | 时间: %s | 主题: %s | 发件人: %s \n", msg.SeqNum, msg.Envelope.Date, msg.Envelope.Subject, address)
-	}
+	messageBody(messages)
+
 	log.Println("所有邮件获取完成")
 }
 
@@ -133,20 +135,84 @@ func listenForNewEmails(c *client.Client, lastSeen uint32) {
 			seqSet.AddRange(lastSeen+1, mbox.Messages)
 			messages := make(chan *imap.Message, newMailCount)
 
+			section := &imap.BodySectionName{}
+
 			go func() {
-				if err = c.Fetch(seqSet, []imap.FetchItem{imap.FetchEnvelope}, messages); err != nil {
-					log.Printf("获取新邮件失败: %v", err)
+				if err := c.Fetch(seqSet, []imap.FetchItem{imap.FetchEnvelope, section.FetchItem()}, messages); err != nil {
+					c = login()
+					log.Fatal("获取邮件失败: ", err)
 				}
 			}()
 
-			for msg := range messages {
-				form := msg.Envelope.From[0]
-				address := form.MailboxName + "@" + form.HostName
-				log.Printf("新邮件: %s | 发件人: %s\n", msg.Envelope.Subject, address)
-			}
+			messageBody(messages)
 
 			// 更新最后一封邮件的编号
 			lastSeen = mbox.Messages
+
 		}
+	}
+}
+
+func messageBody(messages chan *imap.Message) {
+	for msg := range messages {
+		//form := msg.Envelope.From[0]
+		//address := form.MailboxName + "@" + form.HostName
+		//log.Printf("新邮件: %s | 发件人: %s\n", msg.Envelope.Subject, address)
+		if strings.Contains(msg.Envelope.Subject, "Account data access attempt") {
+			r := msg.GetBody(&imap.BodySectionName{})
+			if r == nil {
+				log.Fatal("服务器未返回邮件正文")
+			}
+			mr, err := mail.CreateReader(r)
+			if err != nil {
+				log.Fatal(err)
+			}
+
+			// 处理邮件正文
+			for {
+				p, err := mr.NextPart()
+				if err == io.EOF {
+					break
+				} else if err != nil {
+					log.Fatal("NextPart:err ", err)
+				}
+
+				switch p.Header.(type) {
+				case *mail.InlineHeader:
+					// 读取正文内容
+					b, _ := io.ReadAll(p.Body)
+					bodyText := string(b)
+
+					// 解析HTML内容
+					doc, err := html.Parse(strings.NewReader(bodyText))
+					if err != nil {
+						log.Fatal("Failed to parse HTML:", err)
+					}
+
+					extractText(msg, doc)
+				}
+			}
+		}
+	}
+
+}
+
+// extractText 从 HTML 文档中提取 <p> 标签中的 6 位数字
+func extractText(msg *imap.Message, doc *html.Node) {
+	if doc.Type == html.ElementNode && (doc.Data == "p" || doc.Data == "span") {
+		for c := doc.FirstChild; c != nil; c = c.NextSibling {
+			if c.Type == html.TextNode {
+				text := strings.TrimSpace(c.Data)
+				// 匹配6位数字
+				re := regexp.MustCompile(`^\d{6}$`)
+				if re.MatchString(text) {
+					fmt.Printf("%s 验证码在 <%s>标签, 值为: %s \n", msg.Envelope.Date, doc.Data, text)
+				}
+			}
+		}
+	}
+
+	for c := doc.FirstChild; c != nil; c = c.NextSibling {
+		extractText(msg, c)
 	}
 }
