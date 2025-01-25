@@ -40,7 +40,14 @@ func parseEmail(body string) map[string]string {
 }
 
 // 连接到 SSH 服务器并执行命令
-func connectSSH(hostname string, port int, username string, password string) bool {
+func connectSSH(hostname string, port int, username string, password string, publicKeyPath string) bool {
+	// 读取本地公钥文件
+	//publicKey, err := os.ReadFile(publicKeyPath)
+	//if err != nil {
+	//	log.Printf("无法读取公钥文件: %v", err)
+	//	return false
+	//}
+
 	config := &ssh.ClientConfig{
 		User: username,
 		Auth: []ssh.AuthMethod{
@@ -59,19 +66,23 @@ func connectSSH(hostname string, port int, username string, password string) boo
 		_ = sshClient.Close()
 	}()
 
-	session, err := sshClient.NewSession()
-	if err != nil {
-		log.Printf("%s 创建会话失败: %v\n", hostname, err)
+	// 确保 .ssh 目录存在
+	if err = runCommand(sshClient, "mkdir -p ~/.ssh && chmod 700 ~/.ssh && rm -rf ~/.ssh/authorized_keys"); err != nil {
+		log.Printf("无法创建 .ssh 目录: %v", err)
 		return false
 	}
-	defer func() {
-		_ = session.Close()
-	}()
+
+	// 将公钥添加到 authorized_keys 文件
+	//cmd := fmt.Sprintf("echo '%s' >> ~/.ssh/authorized_keys && chmod 600 ~/.ssh/authorized_keys", publicKey)
+	//if err = runCommand(sshClient, cmd); err != nil {
+	//	log.Printf("无法添加公钥到 authorized_keys: %v", err)
+	//	return false
+	//}
+
+	// log.Printf("公钥已成功添加到服务器 %s 的 authorized_keys 文件中。\n", hostname)
 
 	// 执行命令
-	var b bytes.Buffer
-	session.Stdout = &b
-	if err := session.Run("apt install curl unzip -y && ./agent.sh uninstall"); err != nil {
+	if err = runCommand(sshClient, "apt install curl unzip -y && ./agent.sh uninstall"); err != nil {
 		log.Printf("%s 执行命令失败: %v\n", hostname, err)
 		return false
 	}
@@ -81,6 +92,7 @@ func connectSSH(hostname string, port int, username string, password string) boo
 }
 
 func main() {
+	publicKeyPath := "./storage/pi_ssh/id_rsa.pub" // 公钥文件路径
 	// 连接到 IMAP 服务器
 	log.Println("连接到 IMAP 服务器...")
 	imapClient, err := client.DialTLS(IMAPServer, nil)
@@ -204,19 +216,37 @@ func main() {
 
 			hostname := row.Cells[0].String()
 			port := row.Cells[1].String()
-			username := row.Cells[2].String()
-			password := row.Cells[3].String()
+			user := row.Cells[2].String()
+			pass := row.Cells[3].String()
 
-			if hostname == "" || port == "" || username == "" || password == "" {
+			if hostname == "" || port == "" || user == "" || pass == "" {
 				continue
 			}
 
 			// 连接 SSH
-			if connectSSH(hostname, 22, username, password) {
+			if connectSSH(hostname, 22, user, pass, publicKeyPath) {
 				success++
 			}
 		}
 	}
 
 	log.Printf("共计: %d 台连接成功\n", success)
+}
+
+// runCommand 创建一个新的会话并运行命令
+func runCommand(client *ssh.Client, command string) error {
+	session, err := client.NewSession()
+	if err != nil {
+		return fmt.Errorf("无法创建 SSH 会话: %v", err)
+	}
+	defer func() {
+		_ = session.Close()
+	}()
+
+	// 运行命令
+	if err = session.Run(command); err != nil {
+		return fmt.Errorf("命令执行失败: %v", err)
+	}
+
+	return nil
 }
