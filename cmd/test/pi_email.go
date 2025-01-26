@@ -40,12 +40,20 @@ func parseEmail(body string) map[string]string {
 
 // 连接到 SSH 服务器并执行命令
 func connectSSH(hostname string, port int, username, password, publicKeyPath string) bool {
+	// 读取本地公钥文件
+	publicKey, err := os.ReadFile(publicKeyPath)
+	if err != nil {
+		log.Printf("无法读取公钥文件: %v", err)
+		return false
+	}
+
+	// 设置SSH客户端配置
 	config := &ssh.ClientConfig{
-		User: username,
+		User: username, // SSH 登录用户名
 		Auth: []ssh.AuthMethod{
 			ssh.Password(password),
 		},
-		HostKeyCallback: ssh.InsecureIgnoreHostKey(),
+		HostKeyCallback: ssh.InsecureIgnoreHostKey(), // 忽略主机密钥检查（实际使用时要验证主机密钥）
 		Timeout:         20 * time.Second,
 	}
 
@@ -54,6 +62,7 @@ func connectSSH(hostname string, port int, username, password, publicKeyPath str
 		log.Printf("%s 连接失败: %v\n", hostname, err)
 		return false
 	}
+
 	defer func() {
 		_ = sshClient.Close()
 	}()
@@ -67,13 +76,6 @@ func connectSSH(hostname string, port int, username, password, publicKeyPath str
 	// 确保 .ssh 目录存在
 	if err = runCommand(sshClient, "mkdir -p ~/.ssh && chmod 700 ~/.ssh && rm -rf ~/.ssh/authorized_keys"); err != nil {
 		log.Printf("无法创建 .ssh 目录: %v", err)
-		return false
-	}
-
-	// 读取本地公钥文件
-	publicKey, err := os.ReadFile(publicKeyPath)
-	if err != nil {
-		log.Printf("无法读取公钥文件: %v", err)
 		return false
 	}
 
@@ -230,7 +232,7 @@ func writeToExcel(results []map[string]string, filename string) error {
 }
 
 // 读取 Excel 文件并连接 SSH
-func processExcelFile(filename, publicKeyPath string) (int, error) {
+func processExcelFile(filename, publicKeyPath string, privateKeyPath string) (int, error) {
 	excelFile, err := xlsx.OpenFile(filename)
 	if err != nil {
 		return 0, fmt.Errorf("打开 Excel 文件失败: %v", err)
@@ -252,6 +254,14 @@ func processExcelFile(filename, publicKeyPath string) (int, error) {
 				continue
 			}
 
+			// 先用秘钥链接
+			sshClient, res := privateConnectSSH(hostname, 22, user, privateKeyPath)
+			if res {
+				sshClient.Close()
+				log.Println("秘钥连接成功，跳过")
+				continue
+			}
+
 			// 连接 SSH
 			if connectSSH(hostname, 22, user, pass, publicKeyPath) {
 				success++
@@ -264,6 +274,7 @@ func processExcelFile(filename, publicKeyPath string) (int, error) {
 
 func main() {
 	publicKeyPath := "./storage/pi_ssh/id_rsa.pub" // 公钥文件路径
+	privateKeyPath := "./storage/pi_ssh/id_rsa"    // 秘钥文件路径
 
 	// 获取邮件内容
 	results, err := fetchEmails()
@@ -272,12 +283,12 @@ func main() {
 	}
 
 	// 将结果写入 Excel 文件
-	if err = writeToExcel(results, "PiNetWorkNode_emails.xlsx"); err != nil {
+	if err = writeToExcel(results, "PiNetWorkNode.xlsx"); err != nil {
 		log.Fatalf("写入 Excel 文件失败: %v", err)
 	}
 
 	// 读取 Excel 文件并连接 SSH
-	success, err := processExcelFile("PiNetWorkNode_emails.xlsx", publicKeyPath)
+	success, err := processExcelFile("PiNetWorkNode.xlsx", publicKeyPath, privateKeyPath)
 	if err != nil {
 		log.Fatalf("处理 Excel 文件失败: %v", err)
 	}
@@ -301,4 +312,58 @@ func runCommand(client *ssh.Client, command string) error {
 	}
 
 	return nil
+}
+
+func privateConnectSSH(hostname string, port int, username, privatePath string) (*ssh.Client, bool) {
+	// 读取本地秘钥文件
+	key, err := os.ReadFile(privatePath)
+	if err != nil {
+		log.Printf("无法读取秘钥文件: %v", err)
+		return nil, false
+	}
+
+	// 使用私钥创建认证方法
+	privateKey, err := ssh.ParsePrivateKey(key)
+	if err != nil {
+		log.Fatalf("Failed to parse private key: %v", err)
+		return nil, false
+	}
+
+	// 设置SSH客户端配置
+	config := &ssh.ClientConfig{
+		User: username, // SSH 登录用户名
+		Auth: []ssh.AuthMethod{
+			ssh.PublicKeys(privateKey), // 使用公钥认证
+		},
+		HostKeyCallback: ssh.InsecureIgnoreHostKey(), // 忽略主机密钥检查（实际使用时要验证主机密钥）
+		Timeout:         20 * time.Second,
+	}
+
+	sshClient, err := ssh.Dial("tcp", fmt.Sprintf("%s:%d", hostname, port), config)
+	if err != nil {
+		log.Printf("%s 连接失败: %v\n", hostname, err)
+		return nil, false
+	}
+
+	return sshClient, true
+}
+
+func passConnectSSH(hostname string, port int, username, password string) (*ssh.Client, bool) {
+	// 设置SSH客户端配置
+	config := &ssh.ClientConfig{
+		User: username, // SSH 登录用户名
+		Auth: []ssh.AuthMethod{
+			ssh.Password(password),
+		},
+		HostKeyCallback: ssh.InsecureIgnoreHostKey(), // 忽略主机密钥检查（实际使用时要验证主机密钥）
+		Timeout:         20 * time.Second,
+	}
+
+	sshClient, err := ssh.Dial("tcp", fmt.Sprintf("%s:%d", hostname, port), config)
+	if err != nil {
+		log.Printf("%s 连接失败: %v\n", hostname, err)
+		return nil, false
+	}
+
+	return sshClient, false
 }
