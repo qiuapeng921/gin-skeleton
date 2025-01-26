@@ -259,6 +259,7 @@ func processExcelFile(filename, publicKeyPath string, privateKeyPath string) (in
 			if res {
 				sshClient.Close()
 				log.Println("秘钥连接成功，跳过")
+				success++
 				continue
 			}
 
