@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"fmt"
 	"log"
+	"os"
 	"strings"
 	"time"
 
@@ -33,21 +34,12 @@ func parseEmail(body string) map[string]string {
 			result[key] = value
 		}
 	}
-
-	log.Println(result)
-
+	log.Println("解析邮件内容:", result)
 	return result
 }
 
 // 连接到 SSH 服务器并执行命令
-func connectSSH(hostname string, port int, username string, password string, publicKeyPath string) bool {
-	// 读取本地公钥文件
-	//publicKey, err := os.ReadFile(publicKeyPath)
-	//if err != nil {
-	//	log.Printf("无法读取公钥文件: %v", err)
-	//	return false
-	//}
-
+func connectSSH(hostname string, port int, username, password, publicKeyPath string) bool {
 	config := &ssh.ClientConfig{
 		User: username,
 		Auth: []ssh.AuthMethod{
@@ -59,12 +51,18 @@ func connectSSH(hostname string, port int, username string, password string, pub
 
 	sshClient, err := ssh.Dial("tcp", fmt.Sprintf("%s:%d", hostname, port), config)
 	if err != nil {
-		log.Printf("%s 连接失败: %v\n", hostname, err.Error())
+		log.Printf("%s 连接失败: %v\n", hostname, err)
 		return false
 	}
 	defer func() {
 		_ = sshClient.Close()
 	}()
+
+	// 检查并开启 SSH 密钥认证
+	if err = enableSSHKeyAuth(sshClient); err != nil {
+		log.Printf("%s 开启 SSH 密钥认证失败: %v\n", hostname, err)
+		return false
+	}
 
 	// 确保 .ssh 目录存在
 	if err = runCommand(sshClient, "mkdir -p ~/.ssh && chmod 700 ~/.ssh && rm -rf ~/.ssh/authorized_keys"); err != nil {
@@ -72,47 +70,76 @@ func connectSSH(hostname string, port int, username string, password string, pub
 		return false
 	}
 
-	// 将公钥添加到 authorized_keys 文件
-	//cmd := fmt.Sprintf("echo '%s' >> ~/.ssh/authorized_keys && chmod 600 ~/.ssh/authorized_keys", publicKey)
-	//if err = runCommand(sshClient, cmd); err != nil {
-	//	log.Printf("无法添加公钥到 authorized_keys: %v", err)
-	//	return false
-	//}
+	// 读取本地公钥文件
+	publicKey, err := os.ReadFile(publicKeyPath)
+	if err != nil {
+		log.Printf("无法读取公钥文件: %v", err)
+		return false
+	}
 
-	// log.Printf("公钥已成功添加到服务器 %s 的 authorized_keys 文件中。\n", hostname)
+	// 将公钥添加到 authorized_keys 文件
+	cmd := fmt.Sprintf("echo '%s' >> ~/.ssh/authorized_keys && chmod 600 ~/.ssh/authorized_keys", publicKey)
+	if err = runCommand(sshClient, cmd); err != nil {
+		log.Printf("无法添加公钥到 authorized_keys: %v", err)
+		return false
+	}
+
+	log.Printf("公钥已成功添加到服务器 %s 的 authorized_keys 文件中。\n", hostname)
 
 	// 执行命令
-	if err = runCommand(sshClient, "apt install curl unzip -y && ./agent.sh uninstall"); err != nil {
+	if err = runCommand(sshClient, "apt install curl unzip htop -y"); err != nil {
 		log.Printf("%s 执行命令失败: %v\n", hostname, err)
 		return false
 	}
 
-	log.Printf("%s 连接成功并执行命令\n", hostname)
 	return true
 }
 
-func main() {
-	publicKeyPath := "./storage/pi_ssh/id_rsa.pub" // 公钥文件路径
-	// 连接到 IMAP 服务器
+// 检查并开启 SSH 密钥认证
+func enableSSHKeyAuth(client *ssh.Client) error {
+	configFile := "/etc/ssh/sshd_config"
+
+	// 使用 sed 注释所有秘钥认证的配置
+	cmd := fmt.Sprintf("sed -i '/^PubkeyAuthentication/s/^/#/' %s", configFile)
+	if err := runCommand(client, cmd); err != nil {
+		return fmt.Errorf("设置 PubkeyAuthentication 失败: %v", err)
+	}
+
+	// 开启秘钥认证
+	cmd = fmt.Sprintf("sed -i '/^#PubkeyAuthentication/a PubkeyAuthentication yes' %s", configFile)
+	if err := runCommand(client, cmd); err != nil {
+		return fmt.Errorf("设置 PubkeyAuthentication 失败: %v", err)
+	}
+
+	// 重启 SSH 服务
+	if err := runCommand(client, "systemctl restart sshd"); err != nil {
+		return fmt.Errorf("重启 SSH 服务失败: %v", err)
+	}
+
+	return nil
+}
+
+// 连接到 IMAP 服务器并获取邮件
+func fetchEmails() ([]map[string]string, error) {
 	log.Println("连接到 IMAP 服务器...")
 	imapClient, err := client.DialTLS(IMAPServer, nil)
 	if err != nil {
-		log.Fatal(err)
+		return nil, fmt.Errorf("无法连接到 IMAP 服务器: %v", err)
 	}
 	defer func() {
 		_ = imapClient.Logout()
 	}()
 
 	// 登录
-	if err := imapClient.Login(Username, Password); err != nil {
-		log.Fatal(err)
+	if err = imapClient.Login(Username, Password); err != nil {
+		return nil, fmt.Errorf("登录失败: %v", err)
 	}
 	log.Println("登录成功")
 
 	// 选择 INBOX 文件夹
 	mbox, err := imapClient.Select("INBOX", false)
 	if err != nil {
-		log.Fatal(err)
+		return nil, fmt.Errorf("选择 INBOX 文件夹失败: %v", err)
 	}
 	log.Printf("INBOX 中共有 %d 封邮件\n", mbox.Messages)
 
@@ -121,7 +148,7 @@ func main() {
 	criteria.Header.Set("Subject", "PiNetWorkNode")
 	ids, err := imapClient.Search(criteria)
 	if err != nil {
-		log.Fatal(err)
+		return nil, fmt.Errorf("搜索邮件失败: %v", err)
 	}
 	log.Printf("找到 %d 封符合条件的邮件\n", len(ids))
 
@@ -139,18 +166,18 @@ func main() {
 
 		msg := <-messages
 		if msg == nil {
-			log.Fatal("未找到邮件")
+			return nil, fmt.Errorf("未找到邮件")
 		}
 
 		r := msg.GetBody(&imap.BodySectionName{})
 		if r == nil {
-			log.Fatal("未找到邮件正文")
+			return nil, fmt.Errorf("未找到邮件正文")
 		}
 
 		// 解析邮件
 		mr, err := mail.CreateReader(r)
 		if err != nil {
-			log.Fatal(err)
+			return nil, fmt.Errorf("解析邮件失败: %v", err)
 		}
 
 		for {
@@ -172,11 +199,15 @@ func main() {
 		}
 	}
 
-	// 将结果写入 Excel 文件
+	return results, nil
+}
+
+// 将结果写入 Excel 文件
+func writeToExcel(results []map[string]string, filename string) error {
 	file := xlsx.NewFile()
 	sheet, err := file.AddSheet("PiNetWorkNode")
 	if err != nil {
-		log.Fatal(err)
+		return fmt.Errorf("创建 Excel 工作表失败: %v", err)
 	}
 
 	// 添加表头
@@ -196,15 +227,18 @@ func main() {
 	}
 
 	// 保存 Excel 文件
-	if err := file.Save("PiNetWorkNode_emails.xlsx"); err != nil {
-		log.Fatal(err)
+	if err = file.Save(filename); err != nil {
+		return fmt.Errorf("保存 Excel 文件失败: %v", err)
 	}
 	log.Println("Excel 文件已保存")
+	return nil
+}
 
-	// 读取 Excel 文件并连接 SSH
-	excelFile, err := xlsx.OpenFile("PiNetWorkNode_emails.xlsx")
+// 读取 Excel 文件并连接 SSH
+func processExcelFile(filename, publicKeyPath string) (int, error) {
+	excelFile, err := xlsx.OpenFile(filename)
 	if err != nil {
-		log.Fatal(err)
+		return 0, fmt.Errorf("打开 Excel 文件失败: %v", err)
 	}
 
 	success := 0
@@ -228,6 +262,29 @@ func main() {
 				success++
 			}
 		}
+	}
+
+	return success, nil
+}
+
+func main() {
+	publicKeyPath := "./storage/pi_ssh/id_rsa.pub" // 公钥文件路径
+
+	// 获取邮件内容
+	results, err := fetchEmails()
+	if err != nil {
+		log.Fatalf("获取邮件失败: %v", err)
+	}
+
+	// 将结果写入 Excel 文件
+	if err = writeToExcel(results, "PiNetWorkNode_emails.xlsx"); err != nil {
+		log.Fatalf("写入 Excel 文件失败: %v", err)
+	}
+
+	// 读取 Excel 文件并连接 SSH
+	success, err := processExcelFile("PiNetWorkNode_emails.xlsx", publicKeyPath)
+	if err != nil {
+		log.Fatalf("处理 Excel 文件失败: %v", err)
 	}
 
 	log.Printf("共计: %d 台连接成功\n", success)
