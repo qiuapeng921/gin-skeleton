@@ -46,7 +46,7 @@ func connectSSH(hostname string, port int, username, password, publicKeyPath str
 			ssh.Password(password),
 		},
 		HostKeyCallback: ssh.InsecureIgnoreHostKey(),
-		Timeout:         10 * time.Second,
+		Timeout:         20 * time.Second,
 	}
 
 	sshClient, err := ssh.Dial("tcp", fmt.Sprintf("%s:%d", hostname, port), config)
@@ -97,35 +97,18 @@ func connectSSH(hostname string, port int, username, password, publicKeyPath str
 
 // 检查并开启 SSH 密钥认证
 func enableSSHKeyAuth(client *ssh.Client) error {
-	configFile := "/etc/ssh/sshd_config"
-
-	// 注释所有秘钥认证的配置
-	cmd := fmt.Sprintf("sed -i '/^PubkeyAuthentication/s/^/#/' %s", configFile)
-	if err := runCommand(client, cmd); err != nil {
-		return fmt.Errorf("设置 PubkeyAuthentication 失败: %v", err)
+	commands := []string{
+		"sed -i '/^#*PubkeyAuthentication.*/d' /etc/ssh/sshd_config",
+		"sed -i '/^#*PasswordAuthentication.*/d' /etc/ssh/sshd_config",
+		"echo 'PubkeyAuthentication yes' | tee -a /etc/ssh/sshd_config",
+		"echo 'PasswordAuthentication yes' | tee -a /etc/ssh/sshd_config",
+		"systemctl restart sshd",
 	}
 
-	// 开启秘钥认证
-	cmd = fmt.Sprintf("sed -i '/^#PubkeyAuthentication/a PubkeyAuthentication yes' %s", configFile)
-	if err := runCommand(client, cmd); err != nil {
-		return fmt.Errorf("设置 PubkeyAuthentication 失败: %v", err)
-	}
-
-	// 注释所有密码认证的配置
-	cmd = fmt.Sprintf("sed -i '/^PasswordAuthentication/s/^/#/' %s", configFile)
-	if err := runCommand(client, cmd); err != nil {
-		return fmt.Errorf("设置 PasswordAuthentication 失败: %v", err)
-	}
-
-	// 开启密码认证
-	cmd = fmt.Sprintf("sed -i '/^#PasswordAuthentication/a PasswordAuthentication yes' %s", configFile)
-	if err := runCommand(client, cmd); err != nil {
-		return fmt.Errorf("设置 PasswordAuthentication 失败: %v", err)
-	}
-
-	// 重启 SSH 服务
-	if err := runCommand(client, "systemctl restart sshd"); err != nil {
-		return fmt.Errorf("重启 SSH 服务失败: %v", err)
+	for _, cmd := range commands {
+		if err := runCommand(client, cmd); err != nil {
+			return fmt.Errorf("执行命令失败: %v", err)
+		}
 	}
 
 	return nil
