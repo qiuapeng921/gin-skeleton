@@ -99,7 +99,7 @@ func connectSSH(hostname string, port int, username, password, publicKeyPath str
 func enableSSHKeyAuth(client *ssh.Client) error {
 	configFile := "/etc/ssh/sshd_config"
 
-	// 使用 sed 注释所有秘钥认证的配置
+	// 注释所有秘钥认证的配置
 	cmd := fmt.Sprintf("sed -i '/^PubkeyAuthentication/s/^/#/' %s", configFile)
 	if err := runCommand(client, cmd); err != nil {
 		return fmt.Errorf("设置 PubkeyAuthentication 失败: %v", err)
@@ -109,6 +109,18 @@ func enableSSHKeyAuth(client *ssh.Client) error {
 	cmd = fmt.Sprintf("sed -i '/^#PubkeyAuthentication/a PubkeyAuthentication yes' %s", configFile)
 	if err := runCommand(client, cmd); err != nil {
 		return fmt.Errorf("设置 PubkeyAuthentication 失败: %v", err)
+	}
+
+	// 注释所有密码认证的配置
+	cmd = fmt.Sprintf("sed -i '/^PasswordAuthentication/s/^/#/' %s", configFile)
+	if err := runCommand(client, cmd); err != nil {
+		return fmt.Errorf("设置 PasswordAuthentication 失败: %v", err)
+	}
+
+	// 开启密码认证
+	cmd = fmt.Sprintf("sed -i '/^#PasswordAuthentication/a PasswordAuthentication yes' %s", configFile)
+	if err := runCommand(client, cmd); err != nil {
+		return fmt.Errorf("设置 PasswordAuthentication 失败: %v", err)
 	}
 
 	// 重启 SSH 服务
